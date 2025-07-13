@@ -6,22 +6,14 @@ public class Weapon : MonoBehaviour
     [SerializeField] GameObject bullet;
     [SerializeField] Transform bulletSpawnPos;
     [SerializeField] GameObject weapon;
-    WeaponIcon weaponIcon;
 
+    WeaponIcon weaponIcon;
     PlayerInput playerInput;
     [SerializeField] PlayerController player;
 
-    float fireTimer = 0f;
-    [SerializeField] float fireDelay = 0.2f;
-
-    bool isFiring = false;
-    bool hasFiredOnce = false;
-
-    float pressDuration = 0f;
-    [SerializeField] float autoFireThreshold = 0.25f;
-
-    enum FireMode { None, Single, Auto }
-    FireMode currentFireMode = FireMode.None;
+    float t = 0f;
+    bool input;
+    [SerializeField] float delay = 1f; // 발사 간격
 
     private void Start()
     {
@@ -32,63 +24,53 @@ public class Weapon : MonoBehaviour
     private void OnEnable()
     {
         playerInput = GetComponentInParent<PlayerInput>();
-        playerInput.actions["Fire"].performed += OnFire;
-        playerInput.actions["Fire"].canceled += OnFire;
+        //playerInput.actions["Fire"].performed += OnFire;
+        //playerInput.actions["Fire"].canceled += OnFire;
     }
 
     private void OnDisable()
     {
-        playerInput.actions["Fire"].performed -= OnFire;
-        playerInput.actions["Fire"].canceled -= OnFire;
+        //playerInput.actions["Fire"].performed -= OnFire;
+        //playerInput.actions["Fire"].canceled -= OnFire;
     }
 
     private void Update()
     {
-        if(isFiring)
+        if(t > 0)
+            t -= Time.deltaTime;
+
+        if(t <= 0 && Input.GetMouseButton(0))
         {
-            pressDuration += Time.deltaTime;
-            fireTimer += Time.deltaTime;
-
-            if(currentFireMode == FireMode.None && fireTimer >= fireDelay)
-            {
-                currentFireMode = FireMode.Auto;
-                fireTimer = fireDelay; // 즉시 첫 발
-            }
-
-            if(currentFireMode == FireMode.Auto && fireTimer >= fireDelay)
-            {
-                FireBullet();
-                fireTimer = 0f;
-            }
-        }
-    }
-
-    private void OnFire(InputAction.CallbackContext context)
-    {
-        if(context.performed)
-        {
-            isFiring = true;
+            t = 1;
             player.anim.SetBool("Attack", true);
-            pressDuration = 0f;
-            fireTimer = 0f;
-            hasFiredOnce = false;
-            currentFireMode = FireMode.None;
+            FireBullet();
         }
-        else if(context.canceled)
+        else
         {
-            isFiring = false;
             player.anim.SetBool("Attack", false);
-
-            // 눌렀다 바로 뗀 경우 (단발 모드)
-            if(pressDuration < autoFireThreshold && !hasFiredOnce)
-            {
-                FireBullet();
-                hasFiredOnce = true;
-            }
-
-            currentFireMode = FireMode.None;
         }
     }
+
+    //private void OnFire(InputAction.CallbackContext context)
+    //{
+    //    if(t <= 0)
+    //    {
+    //        t = delay;
+
+    //        if(context.performed)
+    //        {
+    //            player.anim.SetBool("Attack", true);
+
+    //            FireBullet();
+    //        }
+    //        else if(context.canceled)
+    //        {
+    //            player.anim.SetBool("Attack", false);
+
+    //            FireBullet();
+    //        }
+    //    }
+    //}
 
     private void FireBullet()
     {
